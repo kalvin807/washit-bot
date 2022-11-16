@@ -9,8 +9,9 @@ use serenity::framework::standard::macros::group;
 use serenity::framework::StandardFramework;
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
+use serenity::model::prelude::Message;
 use serenity::prelude::*;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use crate::commands::math::*;
 use crate::commands::meta::*;
@@ -33,6 +34,11 @@ impl EventHandler for Handler {
 
     async fn resume(&self, _: Context, _: ResumedEvent) {
         info!("Resumed");
+    }
+
+    async fn message(&self, ctx: Context, new_message: Message) {
+        debug!("Message received: {:?}", new_message.id);
+        ming_handler(ctx, new_message).await;
     }
 }
 
