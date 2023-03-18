@@ -53,7 +53,7 @@ struct OpenAIError {
     code: Option<String>,
 }
 
-const DEFAULT_PROMPT: &str = "Your are a helpful bot call 'washit'. You are chatting with a user. You always give advice and opinion in best effort. Always reply in Cantonese or English.";
+const DEFAULT_PROMPT: &str = "Your are a helpful bot call 'washit'. You are chatting with a user. You always give advice and opinion in best effort. Reply in full Cantonese or full English.";
 
 const MODEL_ID: &str = "gpt-3.5-turbo";
 
