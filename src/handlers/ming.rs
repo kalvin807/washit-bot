@@ -1,9 +1,9 @@
 use crate::RedisClient;
 use lazy_static::lazy_static;
+use log::debug;
 use redis::{Commands, Connection};
 use regex::Regex;
 use serenity::{model::prelude::Message, prelude::Context};
-use tracing::debug;
 
 lazy_static! {
     static ref URL_RE: Regex =

@@ -7,10 +7,19 @@ edition = "2021"
 
 [dependencies]
 dotenvy = "0.15.6"
-tracing = "0.1"
-tracing-subscriber = "0.3"
-redis = "0.22.1"
+redis = "0.22.3"
 lazy_static = "1.4.0"
-serenity = { version = "0.11", features = ["cache", "framework", "standard_framework", "rustls_backend"] }
-tokio = { version = "1.21.2", features = ["macros", "signal", "rt-multi-thread"] }
-regex = "1.7.0"
+serenity = { version = "0.11", features = [
+    "cache",
+    "framework",
+    "standard_framework",
+    "rustls_backend",
+] }
+tokio = { version = "1.26.0", features = [
+    "macros",
+    "signal",
+    "rt-multi-thread",
+] }
+regex = "1.7.1"
+env_logger = "0.10.0"
+log = "0.4.17"

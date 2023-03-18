@@ -4,6 +4,7 @@ mod handlers;
 use std::env;
 
 use dotenvy::dotenv;
+use log::{debug, error, info};
 use serenity::async_trait;
 use serenity::framework::standard::macros::group;
 use serenity::framework::StandardFramework;
@@ -11,7 +12,6 @@ use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::Message;
 use serenity::prelude::*;
-use tracing::{debug, error, info};
 
 use crate::commands::math::*;
 use crate::commands::meta::*;
@@ -49,8 +49,7 @@ struct General;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-
-    tracing_subscriber::fmt::init();
+    env_logger::init();
 
     let redis_url = env::var("REDIS_DSL").expect("REDIS_DSL must be set");
     let redis_client = redis::Client::open(redis_url).expect("Failed to connect to Redis");
