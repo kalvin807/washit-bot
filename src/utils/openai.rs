@@ -65,7 +65,7 @@ fn build_request(user_prompt: String, assist_prompt: String) -> ChatGPTRequest {
 
     if !assist_prompt.is_empty() {
         messages.push(Message {
-            role: "assistance".to_string(),
+            role: "assistant".to_string(),
             content: assist_prompt,
         });
     }
