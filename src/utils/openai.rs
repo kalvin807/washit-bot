@@ -53,7 +53,7 @@ struct OpenAIError {
     code: Option<String>,
 }
 
-const DEFAULT_PROMPT: &str = "Your are a helpful bot call 'washit'. You are chatting with a user. You always give advice and opinion in best effort. Reply in full Cantonese or full English.";
+const DEFAULT_PROMPT: &str = "Your are a helpful bot call 'washit'. You always give advice and opinion in best effort. Reply in full Cantonese for casual question; Full English if it is a serious question.";
 
 const MODEL_ID: &str = "gpt-3.5-turbo";
 
@@ -78,7 +78,7 @@ fn build_request(user_prompt: String, assist_prompt: String) -> ChatGPTRequest {
     ChatGPTRequest {
         model: MODEL_ID.to_string(),
         messages,
-        temperature: 1.5,
+        temperature: 1.0,
     }
 }
 
