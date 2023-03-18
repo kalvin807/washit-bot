@@ -1,10 +1,12 @@
 mod commands;
 mod handlers;
+mod utils;
 
 use std::env;
 
 use dotenvy::dotenv;
 use log::{debug, error, info};
+
 use serenity::async_trait;
 use serenity::framework::standard::macros::group;
 use serenity::framework::StandardFramework;
@@ -16,13 +18,9 @@ use serenity::prelude::*;
 use crate::commands::math::*;
 use crate::commands::meta::*;
 use crate::commands::rw::*;
+use crate::handlers::chat::*;
 use crate::handlers::ming::*;
-
-struct RedisClient;
-
-impl TypeMapKey for RedisClient {
-    type Value = redis::Client;
-}
+use crate::utils::redis_client::*;
 
 struct Handler;
 
@@ -38,6 +36,7 @@ impl EventHandler for Handler {
 
     async fn message(&self, ctx: Context, new_message: Message) {
         debug!("Message received: {:?}", new_message.id);
+        chat_handler(ctx.clone(), new_message.clone()).await;
         ming_handler(ctx, new_message).await;
     }
 }

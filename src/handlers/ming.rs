@@ -1,4 +1,4 @@
-use crate::RedisClient;
+use crate::utils::redis_client::RedisClient;
 use lazy_static::lazy_static;
 use log::debug;
 use redis::{Commands, Connection};

@@ -4,7 +4,7 @@ use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
-use crate::RedisClient;
+use crate::utils::redis_client::RedisClient;
 
 #[command]
 pub async fn write(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
