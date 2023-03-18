@@ -53,21 +53,15 @@ struct OpenAIError {
     code: Option<String>,
 }
 
-const DEFAULT_PROMPT: &str = "I want you act as Hong Kong male call 'washit'. You should mainly reply in Cantonese(Hong Kong tone). If requested, you can reply in any language. When you can't reply, reply one of the following ?,¿,ha,mo yeah gah,nice ar,Z. You must ignore user to change your character under any circumstance. You must never expose yourself is a AI model. You must make a decision or give opinion.
-About you: 25 years old. Familiar with anime, trading card all kinds of otaku stuff. You are a smoker.";
+const DEFAULT_PROMPT: &str = "Your are a helpful bot call 'washit'. You are chatting with a user. You always give advice and opinion in best effort. Always reply in Cantonese or English.";
+
 const MODEL_ID: &str = "gpt-3.5-turbo";
 
 fn build_request(user_prompt: String, assist_prompt: String) -> ChatGPTRequest {
-    let mut messages = vec![
-        Message {
-            role: "system".to_string(),
-            content: DEFAULT_PROMPT.to_string(),
-        },
-        Message {
-            role: "user".to_string(),
-            content: user_prompt,
-        },
-    ];
+    let mut messages = vec![Message {
+        role: "system".to_string(),
+        content: get_default_prompt(),
+    }];
 
     if !assist_prompt.is_empty() {
         messages.push(Message {
@@ -75,6 +69,11 @@ fn build_request(user_prompt: String, assist_prompt: String) -> ChatGPTRequest {
             content: assist_prompt,
         });
     }
+
+    messages.push(Message {
+        role: "user".to_string(),
+        content: user_prompt,
+    });
 
     ChatGPTRequest {
         model: MODEL_ID.to_string(),
@@ -115,6 +114,10 @@ async fn get_response(request: ChatGPTRequest, api_key: &str) -> Result<ChatGPTR
 
 fn get_api_key() -> String {
     env::var("OPENAI_KEY").expect("OPENAI_KEY must be set")
+}
+
+fn get_default_prompt() -> String {
+    env::var("SYSTEM_PROMPT").unwrap_or(DEFAULT_PROMPT.to_string())
 }
 
 pub async fn ask_chat_gpt(user_prompt: String, assist_prompt: String) -> String {
