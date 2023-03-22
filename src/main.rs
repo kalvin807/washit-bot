@@ -1,11 +1,11 @@
 mod commands;
 mod handlers;
 mod utils;
-
-use std::env;
-
 use dotenvy::dotenv;
 use log::{debug, error, info};
+use std::env;
+use tracing::Level;
+use tracing_subscriber::FmtSubscriber;
 
 use serenity::async_trait;
 use serenity::framework::standard::macros::group;
@@ -49,6 +49,13 @@ struct General;
 async fn main() {
     dotenv().ok();
     env_logger::init();
+    let subscriber = FmtSubscriber::builder()
+        // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
+        // will be written to stdout.
+        .with_max_level(Level::INFO)
+        // completes the builder.
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
     let redis_url = env::var("REDIS_DSL").expect("REDIS_DSL must be set");
     let redis_client = redis::Client::open(redis_url).expect("Failed to connect to Redis");

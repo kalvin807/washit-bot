@@ -2,10 +2,26 @@ use log::info;
 use serde::{Deserialize, Serialize};
 use std::env;
 
+pub enum Role {
+    User,
+    Assistant,
+    System,
+}
+
+impl Role {
+    pub fn as_string(&self) -> String {
+        match self {
+            Role::User => "user".to_string(),
+            Role::Assistant => "assistant".to_string(),
+            Role::System => "system".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
-struct Message {
-    role: String,
-    content: String,
+pub struct Message {
+    pub role: String,
+    pub content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -57,23 +73,13 @@ const DEFAULT_PROMPT: &str = "Your are a helpful bot call 'washit'. You always g
 
 const MODEL_ID: &str = "gpt-3.5-turbo";
 
-fn build_request(user_prompt: String, assist_prompt: String) -> ChatGPTRequest {
+fn build_request(chats: &mut Vec<Message>) -> ChatGPTRequest {
     let mut messages = vec![Message {
-        role: "system".to_string(),
+        role: Role::System.as_string(),
         content: get_default_prompt(),
     }];
 
-    if !assist_prompt.is_empty() {
-        messages.push(Message {
-            role: "assistant".to_string(),
-            content: assist_prompt,
-        });
-    }
-
-    messages.push(Message {
-        role: "user".to_string(),
-        content: user_prompt,
-    });
+    messages.append(chats);
 
     ChatGPTRequest {
         model: MODEL_ID.to_string(),
@@ -117,11 +123,11 @@ fn get_api_key() -> String {
 }
 
 fn get_default_prompt() -> String {
-    env::var("SYSTEM_PROMPT").unwrap_or(DEFAULT_PROMPT.to_string())
+    env::var("SYSTEM_PROMPT").unwrap_or_else(|_| DEFAULT_PROMPT.to_string())
 }
 
-pub async fn ask_chat_gpt(user_prompt: String, assist_prompt: String) -> String {
-    let request = build_request(user_prompt, assist_prompt);
+pub async fn ask_chat_gpt(chats: &mut Vec<Message>) -> String {
+    let request = build_request(chats);
     let api_key = get_api_key();
 
     get_response(request, &api_key)
