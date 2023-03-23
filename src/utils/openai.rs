@@ -53,6 +53,22 @@ struct OpenAIError {
     code: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct ImageGenerationPayload {
+    prompt: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ImageResponse {
+    url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ImageGenerationResponse {
+    created: u64,
+    data: Vec<ImageResponse>,
+}
+
 const DEFAULT_PROMPT: &str = "Your are a helpful bot call 'washit'. You always give advice and opinion in best effort. Reply in full Cantonese for casual question; Full English if it is a serious question. Reply in japanese if the user is using japanese";
 
 const MODEL_ID: &str = "gpt-3.5-turbo";
@@ -120,7 +136,7 @@ fn get_api_key() -> String {
 }
 
 fn get_default_prompt() -> String {
-    env::var("SYSTEM_PROMPT").unwrap_or(DEFAULT_PROMPT.to_string())
+    env::var("SYSTEM_PROMPT").unwrap_or_else(|_| DEFAULT_PROMPT.to_string())
 }
 
 pub async fn ask_chat_gpt(user_prompt: String, assist_prompt: String) -> String {
@@ -131,4 +147,37 @@ pub async fn ask_chat_gpt(user_prompt: String, assist_prompt: String) -> String 
         .await
         .map(|response| response.choices[0].message.content.clone())
         .unwrap_or_else(|e| format!("OpenAI: {}", e))
+}
+
+pub async fn generate_images(prompt: &str) -> Result<Vec<String>, String> {
+    let client = reqwest::Client::new();
+    let api_key = get_api_key();
+    let payload = ImageGenerationPayload {
+        prompt: prompt.to_string(),
+    };
+
+    let response = client
+        .post("https://api.openai.com/v1/images/generations")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|e| {
+            warn!("Error getting response from OpenAI: {}", e);
+            format!("Error getting response from OpenAI: {}", e)
+        })?;
+
+    let api_response: ImageGenerationResponse = response.json().await.map_err(|e| {
+        warn!("Error parsing response from OpenAI: {}", e);
+        format!("Error parsing response from OpenAI: {}", e)
+    })?;
+    debug!("OpenAI response: {:#?}", api_response);
+    let image_urls = api_response
+        .data
+        .into_iter()
+        .map(|image_response| image_response.url)
+        .collect();
+
+    Ok(image_urls)
 }
