@@ -5,15 +5,16 @@ mod utils;
 use std::env;
 
 use dotenvy::dotenv;
-use tracing::{debug, error, info};
-
 use serenity::async_trait;
 use serenity::framework::standard::macros::group;
 use serenity::framework::StandardFramework;
+use serenity::model::application::interaction::{Interaction, InteractionResponseType};
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
+use serenity::model::prelude::command::Command;
 use serenity::model::prelude::Message;
 use serenity::prelude::*;
+use tracing::{debug, error, info};
 
 use crate::commands::math::*;
 use crate::commands::meta::*;
@@ -26,8 +27,15 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn ready(&self, _: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, ready: Ready) {
         info!("Connected as {}", ready.user.name);
+
+        let guild_command = Command::create_global_application_command(&ctx.http, |command| {
+            commands::imagine::register(command)
+        })
+        .await;
+
+        info!("global slash command: {:#?}", guild_command)
     }
 
     async fn resume(&self, _: Context, _: ResumedEvent) {
@@ -38,6 +46,28 @@ impl EventHandler for Handler {
         debug!("Message received: {:?}", new_message.id);
         chat_handler(ctx.clone(), new_message.clone()).await;
         ming_handler(ctx, new_message).await;
+    }
+
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        if let Interaction::ApplicationCommand(command) = interaction {
+            println!("Received command interaction: {:#?}", command);
+
+            let content = match command.data.name.as_str() {
+                "imagine" => commands::imagine::run(&command.data.options).await,
+                _ => "not implemented :(".to_string(),
+            };
+
+            if let Err(why) = command
+                .create_interaction_response(&ctx.http, |response| {
+                    response
+                        .kind(InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|message| message.content(content))
+                })
+                .await
+            {
+                error!("Cannot respond to slash command: {}", why);
+            }
+        }
     }
 }
 
