@@ -136,7 +136,7 @@ fn get_api_key() -> String {
 }
 
 fn get_default_prompt() -> String {
-    env::var("SYSTEM_PROMPT").unwrap_or(DEFAULT_PROMPT.to_string())
+    env::var("SYSTEM_PROMPT").unwrap_or_else(|_| DEFAULT_PROMPT.to_string())
 }
 
 pub async fn ask_chat_gpt(user_prompt: String, assist_prompt: String) -> String {
