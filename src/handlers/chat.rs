@@ -24,9 +24,8 @@ pub async fn chat_handler(ctx: Context, new_message: Message) {
     // Check if the message is tagging the bot
     if !new_message.mentions.is_empty() && is_tagging_me_only(&new_message.mentions) {
         let content = new_message.content.clone();
-        // Ask chat gpt
         let prev_content = extract_prev_content(&new_message).unwrap_or_default();
-
+        // Ask chat gpt
         let response = ask_chat_gpt(content, prev_content).await;
 
         if let Err(e) = new_message.reply(&ctx, response).await {
