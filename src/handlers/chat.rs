@@ -29,10 +29,10 @@ pub async fn chat_handler(ctx: Context, new_message: Message) {
 
         let response = ask_chat_gpt(content, prev_content).await;
 
-        if let Err(e) = new_message.reply_mention(&ctx, response).await {
+        if let Err(e) = new_message.reply(&ctx, response).await {
             error!("Failed to send message: {}", e);
             new_message
-                .reply_mention(&ctx, format!("Discord: {}", e))
+                .reply(&ctx, format!("Discord: {}", e))
                 .await
                 .unwrap();
         }
