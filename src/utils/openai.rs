@@ -172,7 +172,7 @@ pub async fn generate_images(prompt: &str) -> Result<Vec<String>, String> {
         warn!("Error parsing response from OpenAI: {}", e);
         format!("Error parsing response from OpenAI: {}", e)
     })?;
-
+    debug!("OpenAI response: {:#?}", api_response);
     let image_urls = api_response
         .data
         .into_iter()

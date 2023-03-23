@@ -9,15 +9,15 @@ use crate::utils::openai::generate_images;
 pub async fn run(options: &[CommandDataOption]) -> String {
     let option = options
         .get(0)
-        .expect("Expected user option")
+        .expect("Expected a string")
         .resolved
         .as_ref()
-        .expect("Expected user object");
+        .expect("Expected string");
 
     if let CommandDataOptionValue::String(prompt) = option {
         let response = generate_images(prompt).await.map(|urls| urls.join("\n"));
         match response {
-            Ok(response) => response,
+            Ok(response) => format!("{}\n ```{}```", response, prompt),
             Err(e) => format!("OpenAI: {}", e),
         }
     } else {

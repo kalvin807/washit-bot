@@ -52,17 +52,14 @@ impl EventHandler for Handler {
         if let Interaction::ApplicationCommand(command) = interaction {
             println!("Received command interaction: {:#?}", command);
 
+            command.defer(&ctx).await.unwrap();
             let content = match command.data.name.as_str() {
                 "imagine" => commands::imagine::run(&command.data.options).await,
                 _ => "not implemented :(".to_string(),
             };
 
             if let Err(why) = command
-                .create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(content))
-                })
+                .edit_original_interaction_response(&ctx.http, |response| response.content(content))
                 .await
             {
                 error!("Cannot respond to slash command: {}", why);
