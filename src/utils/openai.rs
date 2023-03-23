@@ -1,6 +1,6 @@
-use log::info;
 use serde::{Deserialize, Serialize};
 use std::env;
+use tracing::{debug, warn};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Message {
@@ -15,7 +15,7 @@ struct ChatGPTRequest {
     temperature: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct ChatGPTResponse {
     id: String,
     object: String,
@@ -24,14 +24,14 @@ struct ChatGPTResponse {
     usage: Usage,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Choice {
     index: u32,
     message: Message,
     finish_reason: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Usage {
     prompt_tokens: u32,
     completion_tokens: u32,
@@ -92,23 +92,26 @@ async fn get_response(request: ChatGPTRequest, api_key: &str) -> Result<ChatGPTR
         .json(&request)
         .send()
         .await
-        .map_err(|e| format!("Error getting response from OpenAI: {}", e))?;
+        .map_err(|e| {
+            warn!("Error getting response from OpenAI: {}", e);
+            format!("Error getting response from OpenAI: {}", e)
+        })?;
 
-    let response_text = response
-        .text()
-        .await
-        .map_err(|e| format!("Error when reading response from OpenAI: {}", e))?;
-
-    println!("Response from OpenAI: {}", response_text);
+    let response_text = response.text().await.map_err(|e| {
+        warn!("Error when reading response from OpenAI: {}", e);
+        format!("Error when reading response from OpenAI: {}", e)
+    })?;
 
     if let Ok(error_response) = serde_json::from_str::<OpenAIErrorResponse>(&response_text) {
         return Err(error_response.error.message);
     }
 
-    let response_obj: ChatGPTResponse = serde_json::from_str(&response_text)
-        .map_err(|e| format!("Error when parsing response from OpenAI: {}", e))?;
+    let response_obj: ChatGPTResponse = serde_json::from_str(&response_text).map_err(|e| {
+        warn!("Error when parsing response from OpenAI: {}", e);
+        format!("Error when parsing response from OpenAI: {}", e)
+    })?;
 
-    info!("OpenAI response: {:#?}", response_obj);
+    debug!("OpenAI response: {:#?}", response_obj);
     Ok(response_obj)
 }
 
@@ -127,5 +130,5 @@ pub async fn ask_chat_gpt(user_prompt: String, assist_prompt: String) -> String 
     get_response(request, &api_key)
         .await
         .map(|response| response.choices[0].message.content.clone())
-        .unwrap_or_else(|e| format!("Error: {}", e))
+        .unwrap_or_else(|e| format!("OpenAI: {}", e))
 }
