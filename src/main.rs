@@ -14,7 +14,7 @@ use serenity::model::gateway::Ready;
 use serenity::model::prelude::command::Command;
 use serenity::model::prelude::Message;
 use serenity::prelude::*;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 use crate::commands::math::*;
 use crate::commands::meta::*;
@@ -43,7 +43,6 @@ impl EventHandler for Handler {
     }
 
     async fn message(&self, ctx: Context, new_message: Message) {
-        debug!("Message received: {:?}", new_message.id);
         chat_handler(ctx.clone(), new_message.clone()).await;
         ming_handler(ctx, new_message).await;
     }
