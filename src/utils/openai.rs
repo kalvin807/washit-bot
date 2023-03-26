@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
+use serenity::model::prelude::Message as DiscordMessage;
 use std::env;
 use tracing::{debug, warn};
 
+use crate::handlers::chat::BOT_ID;
 #[derive(Debug, Serialize, Deserialize)]
 struct Message {
     role: String,
@@ -70,21 +72,15 @@ struct ImageGenerationResponse {
 }
 
 const DEFAULT_PROMPT: &str = "Your are a helpful bot call 'washit'. You always give advice and opinion in best effort. Reply in full Cantonese for casual question; Full English if it is a serious question. Reply in japanese if the user is using japanese";
-
 const MODEL_ID: &str = "gpt-3.5-turbo";
 
-fn build_request(user_prompt: String, assist_prompt: String) -> ChatGPTRequest {
+fn build_request(user_prompt: String, history_messages: Vec<Message>) -> ChatGPTRequest {
     let mut messages = vec![Message {
         role: "system".to_string(),
         content: get_default_prompt(),
     }];
 
-    if !assist_prompt.is_empty() {
-        messages.push(Message {
-            role: "assistant".to_string(),
-            content: assist_prompt,
-        });
-    }
+    messages.extend(history_messages);
 
     messages.push(Message {
         role: "user".to_string(),
@@ -101,6 +97,7 @@ fn build_request(user_prompt: String, assist_prompt: String) -> ChatGPTRequest {
 async fn get_response(request: ChatGPTRequest, api_key: &str) -> Result<ChatGPTResponse, String> {
     let client = reqwest::Client::new();
     let url = "https://api.openai.com/v1/chat/completions";
+    debug!(target:"open_ai", request = ?request, "prompt");
     let response = client
         .post(url)
         .header("Content-Type", "application/json")
@@ -109,12 +106,12 @@ async fn get_response(request: ChatGPTRequest, api_key: &str) -> Result<ChatGPTR
         .send()
         .await
         .map_err(|e| {
-            warn!("Error getting response from OpenAI: {}", e);
-            format!("Error getting response from OpenAI: {}", e)
+            warn!(?e, warning = "Error getting response from OpenAI",);
+            format!("Error getting response from OpenAI: {:?}", e)
         })?;
 
     let response_text = response.text().await.map_err(|e| {
-        warn!("Error when reading response from OpenAI: {}", e);
+        warn!(?e, warning = "Error reading response from OpenAI",);
         format!("Error when reading response from OpenAI: {}", e)
     })?;
 
@@ -123,11 +120,11 @@ async fn get_response(request: ChatGPTRequest, api_key: &str) -> Result<ChatGPTR
     }
 
     let response_obj: ChatGPTResponse = serde_json::from_str(&response_text).map_err(|e| {
-        warn!("Error when parsing response from OpenAI: {}", e);
+        warn!(?e, warning = "Error parsing response from OpenAI",);
         format!("Error when parsing response from OpenAI: {}", e)
     })?;
+    debug!(target:"open_ai", response = ?response_obj, "response");
 
-    debug!("OpenAI response: {:#?}", response_obj);
     Ok(response_obj)
 }
 
@@ -139,8 +136,25 @@ fn get_default_prompt() -> String {
     env::var("SYSTEM_PROMPT").unwrap_or_else(|_| DEFAULT_PROMPT.to_string())
 }
 
-pub async fn ask_chat_gpt(user_prompt: String, assist_prompt: String) -> String {
-    let request = build_request(user_prompt, assist_prompt);
+fn build_history_messages(history: Vec<DiscordMessage>) -> Vec<Message> {
+    history
+        .into_iter()
+        .map(|message| Message {
+            role: {
+                if message.id == BOT_ID {
+                    "assistant".to_string()
+                } else {
+                    "user".to_string()
+                }
+            },
+            content: message.content,
+        })
+        .collect()
+}
+
+pub async fn ask_chat_gpt(user_prompt: String, history: Vec<DiscordMessage>) -> String {
+    let history_message = build_history_messages(history);
+    let request = build_request(user_prompt, history_message);
     let api_key = get_api_key();
 
     get_response(request, &api_key)
@@ -164,12 +178,12 @@ pub async fn generate_images(prompt: &str) -> Result<Vec<String>, String> {
         .send()
         .await
         .map_err(|e| {
-            warn!("Error getting response from OpenAI: {}", e);
+            warn!(?e, warning = "Error getting response from OpenAI",);
             format!("Error getting response from OpenAI: {}", e)
         })?;
 
     let api_response: ImageGenerationResponse = response.json().await.map_err(|e| {
-        warn!("Error parsing response from OpenAI: {}", e);
+        warn!(?e, warning = "Error parsing response from OpenAI",);
         format!("Error parsing response from OpenAI: {}", e)
     })?;
     debug!("OpenAI response: {:#?}", api_response);
