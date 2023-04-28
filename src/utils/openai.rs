@@ -72,7 +72,6 @@ struct ImageGenerationResponse {
 }
 
 const DEFAULT_PROMPT: &str = "Your are a helpful bot call 'washit'. You always give advice and opinion in best effort. Reply in full Cantonese for casual question; Full English if it is a serious question. Reply in japanese if the user is using japanese";
-const MODEL_ID: &str = "gpt-4";
 
 fn build_request(user_prompt: String, history_messages: Vec<Message>) -> ChatGPTRequest {
     let mut messages = vec![Message {
@@ -88,7 +87,7 @@ fn build_request(user_prompt: String, history_messages: Vec<Message>) -> ChatGPT
     });
 
     ChatGPTRequest {
-        model: MODEL_ID.to_string(),
+        model: get_model_id(),
         messages,
         temperature: 1.0,
     }
@@ -134,6 +133,10 @@ fn get_api_key() -> String {
 
 fn get_default_prompt() -> String {
     env::var("SYSTEM_PROMPT").unwrap_or_else(|_| DEFAULT_PROMPT.to_string())
+}
+
+fn get_model_id() -> String {
+    env::var("MODEL_ID").unwrap_or_else(|_| "gpt-3.5-turbo".to_string())
 }
 
 fn build_history_messages(history: Vec<DiscordMessage>) -> Vec<Message> {
