@@ -1,7 +1,7 @@
 mod commands;
 mod handlers;
+mod libs;
 mod utils;
-
 use std::env;
 
 use dotenvy::dotenv;
@@ -30,12 +30,27 @@ impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         info!("Connected as {}", ready.user.name);
 
-        let guild_command = Command::create_global_application_command(&ctx.http, |command| {
-            commands::imagine::register(command)
-        })
-        .await;
+        let register_imagine_cmd_result =
+            Command::create_global_application_command(&ctx.http, |command| {
+                commands::imagine::register(command)
+            })
+            .await;
+        if let Err(why) = register_imagine_cmd_result {
+            error!("Cannot register slash command: {}", why);
+        }
+        let register_epl_standing_cmd_result =
+            Command::create_global_application_command(&ctx.http, |command| {
+                commands::epl_standing::register(command)
+            })
+            .await;
+        if let Err(why) = register_epl_standing_cmd_result {
+            error!("Cannot register slash command: {}", why);
+        }
 
-        info!("global slash command: {:#?}", guild_command)
+        info!(
+            "global slash command: {:#?}",
+            Command::get_global_application_commands(&ctx.http).await
+        )
     }
 
     async fn resume(&self, _: Context, _: ResumedEvent) {
@@ -51,18 +66,32 @@ impl EventHandler for Handler {
         if let Interaction::ApplicationCommand(command) = interaction {
             println!("Received command interaction: {:#?}", command);
 
-            command.defer(&ctx).await.unwrap();
-            let content = match command.data.name.as_str() {
-                "imagine" => commands::imagine::run(&command.data.options).await,
-                _ => "not implemented :(".to_string(),
+            match command.data.name.as_str() {
+                "imagine" => {
+                    command.defer(&ctx).await.unwrap();
+                    let content = commands::imagine::run(&command.data.options).await;
+                    if let Err(why) = command
+                        .edit_original_interaction_response(&ctx.http, |response| {
+                            response.content(content)
+                        })
+                        .await
+                    {
+                        error!("Cannot respond to slash command: {}", why);
+                    }
+                }
+                "epl_standing" => {
+                    commands::epl_standing::run(ctx, command).await;
+                }
+                _ => {
+                    command.create_interaction_response(&ctx.http, |response| {
+                        response
+                            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|message| {
+                                message.content("Unknown command")
+                            })
+                    }).await.unwrap();
+                }
             };
-
-            if let Err(why) = command
-                .edit_original_interaction_response(&ctx.http, |response| response.content(content))
-                .await
-            {
-                error!("Cannot respond to slash command: {}", why);
-            }
         }
     }
 }
