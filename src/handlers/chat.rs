@@ -87,7 +87,7 @@ async fn send_response_and_update_history(
     }
 }
 
-pub async fn chat_handler(ctx: Context, new_message: Message) {
+pub async fn chat_handler(ctx: &Context, new_message: &Message) {
     if !new_message.mentions.is_empty() && is_tagging_me_only(&new_message.mentions) {
         let data = ctx.data.write().await;
         let client = data.get::<RedisClient>().unwrap();
@@ -97,6 +97,6 @@ pub async fn chat_handler(ctx: Context, new_message: Message) {
         let history = process_message(&mut conn, new_message.clone()).unwrap_or_default();
         let response = ask_chat_gpt(content, history).await;
 
-        send_response_and_update_history(&ctx, &new_message, response, &mut conn).await;
+        send_response_and_update_history(ctx, new_message, response, &mut conn).await;
     }
 }

@@ -35,7 +35,7 @@ fn url_exists(conn: &mut Connection, url: &str) -> bool {
     conn.get::<&str, String>(url).is_ok()
 }
 
-pub async fn ming_handler(ctx: Context, new_message: Message) {
+pub async fn ming_handler(ctx: &Context, new_message: &Message) {
     let data = ctx.data.write().await;
     let client = data.get::<RedisClient>().unwrap();
     let mut conn = client.get_connection().unwrap();
@@ -51,7 +51,7 @@ pub async fn ming_handler(ctx: Context, new_message: Message) {
                 is_ming = true;
             }
 
-            store_message(&mut conn, u, &new_message);
+            store_message(&mut conn, u, new_message);
         }
     }
 
