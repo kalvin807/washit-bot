@@ -5,8 +5,7 @@ use tracing::debug;
 
 lazy_static! {
     static ref URL_RE: Regex =
-        Regex::new(r"^https:\/\/(www.|)(twitter|x)\.com\/(#!\/)?(\w+)\/status(es)*\/(\d+)")
-            .unwrap();
+        Regex::new(r"https:\/\/(www.|)(twitter|x)\.com\/(#!\/)?(\w+)\/status(es)*\/(\d+)").unwrap();
 }
 
 fn is_twitter_url(url: &str) -> bool {
