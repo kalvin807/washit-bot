@@ -61,7 +61,7 @@ impl EventHandler for Handler {
     async fn message(&self, ctx: Context, new_message: Message) {
         chat_handler(&ctx, &new_message).await;
         ming_handler(&ctx, &new_message).await;
-        twitter_handler(&ctx, &new_message).await;
+        // twitter_handler(&ctx, &new_message).await;
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
