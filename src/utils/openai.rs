@@ -57,6 +57,7 @@ struct OpenAIError {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ImageGenerationPayload {
+    model: String,
     prompt: String,
 }
 
@@ -170,6 +171,7 @@ pub async fn generate_images(prompt: &str) -> Result<Vec<String>, String> {
     let client = reqwest::Client::new();
     let api_key = get_api_key();
     let payload = ImageGenerationPayload {
+        model: "dall-e-3",
         prompt: prompt.to_string(),
     };
 
