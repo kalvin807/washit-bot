@@ -171,7 +171,7 @@ pub async fn generate_images(prompt: &str) -> Result<Vec<String>, String> {
     let client = reqwest::Client::new();
     let api_key = get_api_key();
     let payload = ImageGenerationPayload {
-        model: "dall-e-3",
+        model: "dall-e-3".to_string(),
         prompt: prompt.to_string(),
     };
 
