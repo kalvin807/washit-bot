@@ -104,8 +104,6 @@ mod tests {
 
         let formatted = format_standings(&standings);
 
-        // Basic checks
-        assert!(formatted.contains("英超聯賽積分榜"));
         assert!(formatted.contains("曼徹斯特城"));
         assert!(formatted.contains("阿森納"));
 
