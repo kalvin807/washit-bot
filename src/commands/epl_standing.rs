@@ -7,12 +7,13 @@ use serenity::{
     prelude::Context,
 };
 
+const DISCORD_ROW_LIMIT: u16 = 56;
 pub fn format_standings(standings: &[TeamStanding]) -> String {
     let mut table = Table::new();
     table
         .load_preset(ASCII_HORIZONTAL_ONLY)
         .set_content_arrangement(ContentArrangement::Dynamic)
-        .set_width(52)
+        .set_width(DISCORD_ROW_LIMIT)
         .set_header(vec![
             "#", "隊", "分", "場", "勝", "平", "負", "進", "失", "淨",
         ]);
