@@ -1,6 +1,5 @@
 use crate::libs::epl_data_client::{get_standings, TeamStanding};
-use comfy_table::modifiers::UTF8_ROUND_CORNERS;
-use comfy_table::presets::UTF8_FULL;
+use comfy_table::presets::UTF8_FULL_CONDENSED;
 use comfy_table::Table;
 use serenity::{
     builder::{CreateApplicationCommand, CreateEmbed},
@@ -10,21 +9,18 @@ use serenity::{
 
 pub fn format_standings(standings: &[TeamStanding]) -> String {
     let mut table = Table::new();
-    table
-        .load_preset(UTF8_FULL)
-        .apply_modifier(UTF8_ROUND_CORNERS)
-        .set_header(vec![
-            "排名",
-            "球隊",
-            "積分",
-            "場次",
-            "勝",
-            "平",
-            "負",
-            "進球",
-            "失球",
-            "淨勝球",
-        ]);
+    table.load_preset(UTF8_FULL_CONDENSED).set_header(vec![
+        "排名",
+        "球隊",
+        "積分",
+        "場次",
+        "勝",
+        "平",
+        "負",
+        "進球",
+        "失球",
+        "淨勝球",
+    ]);
 
     for standing in standings.iter() {
         table.add_row(vec![
@@ -41,7 +37,7 @@ pub fn format_standings(standings: &[TeamStanding]) -> String {
         ]);
     }
 
-    format!("英超聯賽積分榜\n\n{}", table.to_string())
+    table.to_string()
 }
 
 pub async fn run(ctx: Context, command: ApplicationCommandInteraction) {
