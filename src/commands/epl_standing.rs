@@ -1,6 +1,6 @@
 use crate::libs::epl_data_client::{get_standings, TeamStanding};
-use comfy_table::presets::UTF8_FULL_CONDENSED;
 use comfy_table::Table;
+use comfy_table::{presets::ASCII_HORIZONTAL_ONLY, ContentArrangement};
 use serenity::{
     builder::{CreateApplicationCommand, CreateEmbed},
     model::application::interaction::application_command::ApplicationCommandInteraction,
@@ -9,18 +9,13 @@ use serenity::{
 
 pub fn format_standings(standings: &[TeamStanding]) -> String {
     let mut table = Table::new();
-    table.load_preset(UTF8_FULL_CONDENSED).set_header(vec![
-        "排名",
-        "球隊",
-        "積分",
-        "場次",
-        "勝",
-        "平",
-        "負",
-        "進球",
-        "失球",
-        "淨勝球",
-    ]);
+    table
+        .load_preset(ASCII_HORIZONTAL_ONLY)
+        .set_content_arrangement(ContentArrangement::Dynamic)
+        .set_width(52)
+        .set_header(vec![
+            "#", "隊", "分", "場", "勝", "平", "負", "進", "失", "淨",
+        ]);
 
     for standing in standings.iter() {
         table.add_row(vec![
@@ -78,7 +73,7 @@ mod tests {
         let standings = vec![
             TeamStanding {
                 standing: 1,
-                team_name: "曼徹斯特城".to_string(),
+                team_name: "曼城".to_string(),
                 victory_point: 89,
                 match_count: 38,
                 won_count: 29,
@@ -104,7 +99,7 @@ mod tests {
 
         let formatted = format_standings(&standings);
 
-        assert!(formatted.contains("曼徹斯特城"));
+        assert!(formatted.contains("曼城"));
         assert!(formatted.contains("阿森納"));
 
         // Check for header
@@ -118,6 +113,9 @@ mod tests {
         assert!(formatted.contains("61"));
         assert!(formatted.contains("45"));
 
-        // You can add more specific checks as needed
+        // exactly 3 rows + decoration
+        assert_eq!(formatted.lines().count(), 6);
+        // no row is longer than 52 characters
+        assert!(formatted.lines().all(|line| line.len() <= 52));
     }
 }
