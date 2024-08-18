@@ -5,7 +5,6 @@ mod utils;
 use std::env;
 
 use dotenvy::dotenv;
-use handlers::twitter::twitter_handler;
 use serenity::async_trait;
 use serenity::framework::standard::macros::group;
 use serenity::framework::StandardFramework;
