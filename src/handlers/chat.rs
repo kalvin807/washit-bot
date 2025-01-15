@@ -3,7 +3,7 @@ use redis::Commands;
 
 use crate::utils::redis_client::RedisClient;
 
-const BOT_ID: u64 = 1042797425524183040;
+pub const BOT_ID: u64 = 1042797425524183040;
 
 fn is_tagging_me_only(mentions: &[User]) -> bool {
     mentions.len() == 1 && mentions.iter().all(|mention| mention.id.get() == BOT_ID)

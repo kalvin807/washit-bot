@@ -1,8 +1,7 @@
 use once_cell::sync::Lazy;
 use redis::Commands;
 use regex::Regex;
-use serenity::model::prelude::*;
-use serenity::prelude::*;
+use poise::serenity_prelude::*;
 
 use crate::utils::redis_client::RedisClient;
 

@@ -13,7 +13,7 @@ pub async fn write(
     let client = &data.redis_client;
     let mut conn = client.get_connection()?;
     
-    match conn.set::<&str, &str>(&url, "") {
+    match conn.set::<&str, &str, ()>(&url, "") {
         Ok(_) => {
             ctx.say(format!("Added {}", url)).await?;
         }

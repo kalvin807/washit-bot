@@ -13,12 +13,12 @@ pub async fn imagine(
     let response = generate_images(&prompt).await.map(|urls| urls.join("\n"));
     match response {
         Ok(response) => {
-            ctx.send(|m| {
+            ctx.send(|m: &mut poise::CreateReply| {
                 m.content(format!("{}\n ```{}```", response, prompt))
             }).await?;
         }
         Err(e) => {
-            ctx.send(|m| {
+            ctx.send(|m: &mut poise::CreateReply| {
                 m.content(format!("OpenAI: {}", e))
                  .ephemeral(true)
             }).await?;

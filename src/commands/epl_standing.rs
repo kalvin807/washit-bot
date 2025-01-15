@@ -1,6 +1,7 @@
 use comfy_table::{Cell, Table};
 use poise::serenity_prelude::*;
 use serde_json::Value;
+use crate::libs::epl_data_client::StandingsResponse;
 
 use crate::{Context, Error};
 
@@ -11,7 +12,7 @@ pub async fn epl_standing(ctx: Context<'_>) -> Result<(), Error> {
 
     let standings = crate::libs::epl_data_client::get_standings().await;
     match standings {
-        Ok((standings, updated_at)) => {
+        Ok(StandingsResponse { standings, updated_at }) => {
             let mut table = Table::new();
             table.set_header(vec![
                 Cell::new("#"),
