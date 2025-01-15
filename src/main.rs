@@ -74,13 +74,7 @@ async fn main() {
                 write(),
                 // TODO: Add other commands here
             ],
-            prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some("~".into()),
-                edit_tracker: Some(Arc::new(poise::EditTracker::for_timespan(
-                    std::time::Duration::from_secs(3600),
-                ))),
-                ..Default::default()
-            },
+
             // Event handlers
             event_handler: |ctx, event, _framework, _data| {
                 Box::pin(async move {

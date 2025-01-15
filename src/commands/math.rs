@@ -1,7 +1,7 @@
 use crate::{Context, Error};
 
 /// Multiply two numbers
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command)]
 pub async fn multiply(
     ctx: Context<'_>,
     #[description = "First number"] num1: f64,

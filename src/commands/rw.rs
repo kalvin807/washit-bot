@@ -2,7 +2,7 @@ use crate::{Context, Error};
 use redis::Commands;
 
 /// Write a URL to the database
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command)]
 pub async fn write(
     ctx: Context<'_>,
     #[description = "URL to store"] url: String,
@@ -24,7 +24,7 @@ pub async fn write(
 }
 
 /// Read a URL from the database
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command)]
 pub async fn read(
     ctx: Context<'_>,
     #[description = "URL to read"] url: String,
