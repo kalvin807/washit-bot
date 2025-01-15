@@ -83,12 +83,15 @@ async fn main() {
             // Event handlers
             event_handler: |ctx, event, _framework, data| {
                 Box::pin(async move {
-                    if let Some(new_message) = event.message() {
-                        handlers::chat::chat_handler(ctx, new_message).await?;
-                        handlers::ming::ming_handler(ctx, new_message).await?;
-                    }
-                    if let Some(ready) = event.ready() {
-                        info!("Connected as {}", ready.user.name);
+                    match event {
+                        poise::Event::Message { new_message } => {
+                            handlers::chat::chat_handler(ctx, new_message).await?;
+                            handlers::ming::ming_handler(ctx, new_message).await?;
+                        }
+                        poise::Event::Ready { data_about_bot } => {
+                            info!("Connected as {}", data_about_bot.user.name);
+                        }
+                        _ => {}
                     }
                     Ok(())
                 })
