@@ -1,68 +1,66 @@
-use crate::libs::epl_data_client::{get_standings, TeamStanding};
-use comfy_table::Table;
-use comfy_table::{presets::ASCII_HORIZONTAL_ONLY, ContentArrangement};
-use serenity::{
-    builder::{CreateApplicationCommand, CreateEmbed},
-    model::application::interaction::application_command::ApplicationCommandInteraction,
-    prelude::Context,
-};
+use comfy_table::{Cell, Table};
+use poise::serenity_prelude::*;
+use serde_json::Value;
 
-const DISCORD_ROW_LIMIT: u16 = 56;
-pub fn format_standings(standings: &[TeamStanding]) -> String {
-    let mut table = Table::new();
-    table
-        .load_preset(ASCII_HORIZONTAL_ONLY)
-        .set_content_arrangement(ContentArrangement::Dynamic)
-        .set_width(DISCORD_ROW_LIMIT)
-        .set_header(vec![
-            "#", "隊", "分", "場", "勝", "平", "負", "進", "失", "淨",
-        ]);
+use crate::{Context, Error};
 
-    for standing in standings.iter() {
-        table.add_row(vec![
-            standing.standing.to_string(),
-            standing.team_name.clone(),
-            standing.victory_point.to_string(),
-            standing.match_count.to_string(),
-            standing.won_count.to_string(),
-            standing.drawn_count.to_string(),
-            standing.lost_count.to_string(),
-            standing.goal_point.to_string(),
-            standing.lost_point.to_string(),
-            standing.point_difference.to_string(),
-        ]);
+/// Get EPL standings
+#[poise::command(slash_command)]
+pub async fn epl_standing(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.defer().await?;
+
+    let standings = crate::libs::epl_data_client::get_standings().await;
+    match standings {
+        Ok((standings, updated_at)) => {
+            let mut table = Table::new();
+            table.set_header(vec![
+                Cell::new("#"),
+                Cell::new("Team"),
+                Cell::new("P"),
+                Cell::new("W"),
+                Cell::new("D"),
+                Cell::new("L"),
+                Cell::new("GF"),
+                Cell::new("GA"),
+                Cell::new("GD"),
+                Cell::new("Pts"),
+            ]);
+
+            for standing in standings {
+                let team = standing["team"].as_object().unwrap();
+                let stats = standing["stats"].as_array().unwrap();
+                let mut row = Vec::new();
+
+                row.push(Cell::new(standing["rank"].as_i64().unwrap()));
+                row.push(Cell::new(team["shortName"].as_str().unwrap()));
+
+                for stat in stats {
+                    let value = stat["value"].as_i64().unwrap();
+                    row.push(Cell::new(value));
+                }
+
+                table.add_row(row);
+            }
+
+            ctx.send(|m| {
+                m.embed(|e| {
+                    e.title("Premier League Standings")
+                        .description(format!("```\n{}\n```", table))
+                        .footer(|f| f.text(format!("最後更新: {}", updated_at)))
+                })
+            })
+            .await?;
+        }
+        Err(e) => {
+            ctx.send(|m| {
+                m.content(format!("Error: {}", e))
+                    .ephemeral(true)
+            })
+            .await?;
+        }
     }
 
-    table.to_string()
-}
-
-pub async fn run(ctx: Context, command: ApplicationCommandInteraction) {
-    command.defer(&ctx).await.unwrap();
-    let standings_response = get_standings().await.unwrap();
-
-    let formatted_standings = format_standings(&standings_response.standing);
-    let embed = create_standings_embed(&formatted_standings, &standings_response.updated_at);
-
-    if let Err(why) = command
-        .edit_original_interaction_response(&ctx.http, |response| response.add_embed(embed))
-        .await
-    {
-        println!("Cannot edit response: {}", why);
-    }
-}
-
-fn create_standings_embed(standings: &str, updated_at: &str) -> CreateEmbed {
-    let mut embed = CreateEmbed::default();
-    embed
-        .title("積分榜")
-        .description(format!("```\n{}\n```", standings))
-        .footer(|f| f.text(format!("最後更新: {}", updated_at)))
-        .color(0x3498db);
-    embed
-}
-
-pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
-    command.name("epl_standing").description("英超積分榜")
+    Ok(())
 }
 
 #[cfg(test)]
@@ -71,36 +69,60 @@ mod tests {
 
     #[test]
     fn test_format_standings() {
-        let standings = vec![
-            TeamStanding {
-                standing: 1,
-                team_name: "曼城".to_string(),
-                victory_point: 89,
-                match_count: 38,
-                won_count: 29,
-                drawn_count: 2,
-                lost_count: 7,
-                goal_point: 94,
-                lost_point: 33,
-                point_difference: 61,
-            },
-            TeamStanding {
-                standing: 2,
-                team_name: "阿森納".to_string(),
-                victory_point: 84,
-                match_count: 38,
-                won_count: 26,
-                drawn_count: 6,
-                lost_count: 6,
-                goal_point: 88,
-                lost_point: 43,
-                point_difference: 45,
-            },
-        ];
+        let json_str = r#"[
+            {
+                "rank": 1,
+                "team": {
+                    "shortName": "ARS"
+                },
+                "stats": [
+                    {"value": 20},
+                    {"value": 15},
+                    {"value": 3},
+                    {"value": 2},
+                    {"value": 43},
+                    {"value": 20},
+                    {"value": 23},
+                    {"value": 48}
+                ]
+            }
+        ]"#;
 
-        let formatted = format_standings(&standings);
+        let standings: Value = serde_json::from_str(json_str).unwrap();
+        let standings = standings.as_array().unwrap();
 
-        assert!(formatted.contains("曼城"));
-        assert!(formatted.contains("阿森納"));
+        let mut table = Table::new();
+        table.set_header(vec![
+            Cell::new("#"),
+            Cell::new("Team"),
+            Cell::new("P"),
+            Cell::new("W"),
+            Cell::new("D"),
+            Cell::new("L"),
+            Cell::new("GF"),
+            Cell::new("GA"),
+            Cell::new("GD"),
+            Cell::new("Pts"),
+        ]);
+
+        for standing in standings {
+            let team = standing["team"].as_object().unwrap();
+            let stats = standing["stats"].as_array().unwrap();
+            let mut row = Vec::new();
+
+            row.push(Cell::new(standing["rank"].as_i64().unwrap()));
+            row.push(Cell::new(team["shortName"].as_str().unwrap()));
+
+            for stat in stats {
+                let value = stat["value"].as_i64().unwrap();
+                row.push(Cell::new(value));
+            }
+
+            table.add_row(row);
+        }
+
+        let table_str = format!("{}", table);
+        assert!(table_str.contains("ARS"));
+        assert!(table_str.contains("48"));
     }
 }

@@ -60,6 +60,7 @@ async fn main() {
             commands: vec![
                 help(),
                 commands::imagine(),
+                commands::epl_standing(),
                 // TODO: Add other commands here
             ],
             prefix_options: poise::PrefixFrameworkOptions {
