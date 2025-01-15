@@ -12,7 +12,7 @@ pub async fn epl_standing(ctx: Context<'_>) -> Result<(), Error> {
 
     let standings = crate::libs::epl_data_client::get_standings().await;
     match standings {
-        Ok(StandingsResponse { standings, updated_at }) => {
+        Ok(StandingsResponse { standing: standings, updated_at }) => {
             let mut table = Table::new();
             table.set_header(vec![
                 Cell::new("#"),
