@@ -7,7 +7,7 @@ use std::env;
 use std::sync::Arc;
 
 use dotenvy::dotenv;
-use poise::serenity_prelude::{self as serenity, Event};
+use poise::{serenity_prelude as serenity, Event};
 use crate::commands::{
     epl_standing::epl_standing,
     math::multiply,

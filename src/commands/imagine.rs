@@ -1,5 +1,6 @@
 use crate::{Context, Error};
 use crate::utils::openai::generate_images;
+use poise::CreateReply;
 
 /// Ask AI to draw an image based on your prompt
 #[poise::command(slash_command)]
@@ -13,15 +14,15 @@ pub async fn imagine(
     let response = generate_images(&prompt).await.map(|urls| urls.join("\n"));
     match response {
         Ok(response) => {
-            ctx.send(|m| {
-                m.content(format!("{}\n ```{}```", response, prompt))
-            }).await?;
+            let reply = CreateReply::default()
+                .content(format!("{}\n ```{}```", response, prompt));
+            ctx.send(reply).await?;
         }
         Err(e) => {
-            ctx.send(|m| {
-                m.content(format!("OpenAI: {}", e))
-                 .ephemeral(true)
-            }).await?;
+            let reply = CreateReply::default()
+                .content(format!("OpenAI: {}", e))
+                .ephemeral(true);
+            ctx.send(reply).await?;
         }
     }
     

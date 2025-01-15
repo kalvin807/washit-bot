@@ -28,16 +28,13 @@ pub async fn epl_standing(ctx: Context<'_>) -> Result<(), Error> {
             ]);
 
             for standing in standings {
-                let team = standing["team"].as_object().unwrap();
-                let stats = standing["stats"].as_array().unwrap();
                 let mut row = Vec::new();
 
-                row.push(Cell::new(standing["rank"].as_i64().unwrap()));
-                row.push(Cell::new(team["shortName"].as_str().unwrap()));
+                row.push(Cell::new(standing.rank));
+                row.push(Cell::new(&standing.team.short_name));
 
-                for stat in stats {
-                    let value = stat["value"].as_i64().unwrap();
-                    row.push(Cell::new(value));
+                for stat in &standing.stats {
+                    row.push(Cell::new(stat.value));
                 }
 
                 table.add_row(row);

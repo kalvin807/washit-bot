@@ -19,7 +19,7 @@ fn extract_urls(url: &str) -> Vec<String> {
     urls
 }
 
-fn url_exists(conn: &mut Connection, url: &str) -> bool {
+fn url_exists(conn: &mut redis::Connection, url: &str) -> bool {
     conn.get::<&str, String>(url).is_ok()
 }
 
