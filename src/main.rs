@@ -7,7 +7,7 @@ use std::env;
 use std::sync::Arc;
 
 use dotenvy::dotenv;
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{self as serenity, Event};
 use crate::commands::{
     epl_standing::epl_standing,
     math::multiply,
@@ -84,11 +84,11 @@ async fn main() {
             event_handler: |ctx, event, _framework, data| {
                 Box::pin(async move {
                     match event {
-                        poise::Event::Message { new_message } => {
+                        Event::Message { new_message } => {
                             handlers::chat::chat_handler(ctx, new_message).await?;
                             handlers::ming::ming_handler(ctx, new_message).await?;
                         }
-                        poise::Event::Ready { data_about_bot } => {
+                        Event::Ready { data_about_bot } => {
                             info!("Connected as {}", data_about_bot.user.name);
                         }
                         _ => {}
