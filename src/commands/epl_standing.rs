@@ -46,8 +46,7 @@ pub async fn epl_standing(ctx: Context<'_>) -> Result<(), Error> {
             embed.title("Premier League Standings")
                 .description(format!("```\n{}\n```", table));
 
-            let mut footer = CreateEmbedFooter::default();
-            footer.text(format!("最後更新: {}", updated_at));
+            let footer = CreateEmbedFooter::new(format!("最後更新: {}", updated_at));
             embed.footer(footer);
 
             let reply = poise::CreateReply::default()
