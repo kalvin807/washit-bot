@@ -30,13 +30,16 @@ pub async fn epl_standing(ctx: Context<'_>) -> Result<(), Error> {
             for standing in standings {
                 let mut row = Vec::new();
 
-                row.push(Cell::new(standing.rank));
-                row.push(Cell::new(&standing.team.short_name));
-
-                for stat in &standing.stats {
-                    row.push(Cell::new(stat.value));
-                }
-
+                row.push(Cell::new(standing.standing));
+                row.push(Cell::new(&standing.team_name));
+                row.push(Cell::new(standing.match_count));
+                row.push(Cell::new(standing.won_count));
+                row.push(Cell::new(standing.draw_count));
+                row.push(Cell::new(standing.lost_count));
+                row.push(Cell::new(standing.goal_count));
+                row.push(Cell::new(standing.goal_against));
+                row.push(Cell::new(standing.goal_difference));
+                row.push(Cell::new(standing.victory_point));
                 table.add_row(row);
             }
 
