@@ -1,5 +1,5 @@
 use crate::{Context, Error};
-use redis::Connection;
+use redis::Commands;
 
 use crate::utils::redis_client::RedisClient;
 

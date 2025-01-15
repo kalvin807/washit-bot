@@ -7,7 +7,13 @@ use std::env;
 use std::sync::Arc;
 
 use dotenvy::dotenv;
-use poise::serenity_prelude::{self as serenity, Event};
+use poise::serenity_prelude::{self as serenity};
+use crate::commands::{
+    epl_standing::epl_standing,
+    math::multiply,
+    meta::ping,
+    rw::{read, write},
+};
 use redis::Client as RedisClient;
 use tracing::{error, info};
 
@@ -59,12 +65,12 @@ async fn main() {
         .options(poise::FrameworkOptions {
             commands: vec![
                 help(),
-                commands::imagine(),
-                commands::epl_standing(),
-                commands::multiply(),
-                commands::ping(),
-                commands::read(),
-                commands::write(),
+                commands::imagine::imagine(),
+                epl_standing(),
+                multiply(),
+                ping(),
+                read(),
+                write(),
                 // TODO: Add other commands here
             ],
             prefix_options: poise::PrefixFrameworkOptions {
@@ -78,11 +84,11 @@ async fn main() {
             event_handler: |ctx, event, _framework, data| {
                 Box::pin(async move {
                     match event {
-                        Event::Message { new_message } => {
+                        poise::Event::Message { new_message } => {
                             handlers::chat::chat_handler(ctx, new_message).await?;
                             handlers::ming::ming_handler(ctx, new_message).await?;
                         }
-                        Event::Ready { data_about_bot } => {
+                        poise::Event::Ready { data_about_bot } => {
                             info!("Connected as {}", data_about_bot.user.name);
                         }
                         _ => {}
