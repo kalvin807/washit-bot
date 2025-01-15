@@ -34,11 +34,11 @@ pub async fn epl_standing(ctx: Context<'_>) -> Result<(), Error> {
                 row.push(Cell::new(&standing.team_name));
                 row.push(Cell::new(standing.match_count));
                 row.push(Cell::new(standing.won_count));
-                row.push(Cell::new(standing.draw_count));
+                row.push(Cell::new(standing.drawn_count));
                 row.push(Cell::new(standing.lost_count));
-                row.push(Cell::new(standing.goal_count));
-                row.push(Cell::new(standing.goal_against));
-                row.push(Cell::new(standing.goal_difference));
+                row.push(Cell::new(standing.goal_point));
+                row.push(Cell::new(standing.goal_point));
+                row.push(Cell::new(standing.point_difference));
                 row.push(Cell::new(standing.victory_point));
                 table.add_row(row);
             }
