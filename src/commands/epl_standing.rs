@@ -1,6 +1,5 @@
 use comfy_table::{Cell, Table};
 use poise::serenity_prelude::*;
-use serde_json::Value;
 use crate::libs::epl_data_client::StandingsResponse;
 
 use crate::{Context, Error};
@@ -43,21 +42,19 @@ pub async fn epl_standing(ctx: Context<'_>) -> Result<(), Error> {
                 table.add_row(row);
             }
 
-            ctx.send(|m| {
-                m.embed(|e| {
+            let reply = poise::CreateReply::default()
+                .embed(|e| {
                     e.title("Premier League Standings")
                         .description(format!("```\n{}\n```", table))
                         .footer(|f| f.text(format!("最後更新: {}", updated_at)))
-                })
-            })
-            .await?;
+                });
+            ctx.send(reply).await?;
         }
         Err(e) => {
-            ctx.send(|m| {
-                m.content(format!("Error: {}", e))
-                    .ephemeral(true)
-            })
-            .await?;
+            let reply = poise::CreateReply::default()
+                .content(format!("Error: {}", e))
+                .ephemeral(true);
+            ctx.send(reply).await?;
         }
     }
 
