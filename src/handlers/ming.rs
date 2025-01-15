@@ -35,7 +35,7 @@ fn url_exists(conn: &mut Connection, url: &str) -> bool {
     conn.get::<&str, String>(url).is_ok()
 }
 
-pub async fn ming_handler(ctx: &Context, new_message: &Message) {
+pub async fn ming_handler(ctx: &serenity::Context, new_message: &serenity::Message) -> Result<(), crate::Error> {
     let data = ctx.data.write().await;
     let client = data.get::<RedisClient>().unwrap();
     let mut conn = client.get_connection().unwrap();
@@ -91,3 +91,4 @@ mod tests {
         assert_eq!(result.unwrap(), vec!["example.com", "example2.com"]);
     }
 }
+    Ok(())

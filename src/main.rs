@@ -2,104 +2,44 @@ mod commands;
 mod handlers;
 mod libs;
 mod utils;
+
 use std::env;
+use std::sync::Arc;
 
 use dotenvy::dotenv;
-use serenity::async_trait;
-use serenity::framework::standard::macros::group;
-use serenity::framework::StandardFramework;
-use serenity::model::application::interaction::Interaction;
-use serenity::model::event::ResumedEvent;
-use serenity::model::gateway::Ready;
-use serenity::model::prelude::command::Command;
-use serenity::model::prelude::Message;
-use serenity::prelude::*;
+use poise::serenity_prelude::{self as serenity, Event};
+use redis::Client as RedisClient;
 use tracing::{error, info};
 
-use crate::commands::math::*;
-use crate::commands::meta::*;
-use crate::commands::rw::*;
-use crate::handlers::chat::*;
-use crate::handlers::ming::*;
-use crate::utils::redis_client::*;
+// Type aliases for convenience
+pub type Error = Box<dyn std::error::Error + Send + Sync>;
+pub type Context<'a> = poise::Context<'a, Data, Error>;
 
-struct Handler;
-
-#[async_trait]
-impl EventHandler for Handler {
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        info!("Connected as {}", ready.user.name);
-
-        let register_imagine_cmd_result =
-            Command::create_global_application_command(&ctx.http, |command| {
-                commands::imagine::register(command)
-            })
-            .await;
-        if let Err(why) = register_imagine_cmd_result {
-            error!("Cannot register slash command: {}", why);
-        }
-        let register_epl_standing_cmd_result =
-            Command::create_global_application_command(&ctx.http, |command| {
-                commands::epl_standing::register(command)
-            })
-            .await;
-        if let Err(why) = register_epl_standing_cmd_result {
-            error!("Cannot register slash command: {}", why);
-        }
-
-        info!(
-            "global slash command: {:#?}",
-            Command::get_global_application_commands(&ctx.http).await
-        )
-    }
-
-    async fn resume(&self, _: Context, _: ResumedEvent) {
-        info!("Resumed");
-    }
-
-    async fn message(&self, ctx: Context, new_message: Message) {
-        chat_handler(&ctx, &new_message).await;
-        ming_handler(&ctx, &new_message).await;
-        // twitter_handler(&ctx, &new_message).await;
-    }
-
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            println!("Received command interaction: {:#?}", command);
-
-            match command.data.name.as_str() {
-                "imagine" => {
-                    command.defer(&ctx).await.unwrap();
-                    let content = commands::imagine::run(&command.data.options).await;
-                    if let Err(why) = command
-                        .edit_original_interaction_response(&ctx.http, |response| {
-                            response.content(content)
-                        })
-                        .await
-                    {
-                        error!("Cannot respond to slash command: {}", why);
-                    }
-                }
-                "epl_standing" => {
-                    commands::epl_standing::run(ctx, command).await;
-                }
-                _ => {
-                    command.create_interaction_response(&ctx.http, |response| {
-                        response
-                            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-                            .interaction_response_data(|message| {
-                                message.content("Unknown command")
-                            })
-                    }).await.unwrap();
-                }
-            };
-        }
-    }
+// User data, which is stored and accessible in all command invocations
+#[derive(Debug)]
+pub struct Data {
+    redis_client: Arc<RedisClient>,
 }
 
-#[group]
-#[commands(multiply, ping, write, read)]
-struct General;
+/// Show help menu
+#[poise::command(slash_command, prefix_command)]
+async fn help(
+    ctx: Context<'_>,
+    #[description = "Specific command to show help about"]
+    command: Option<String>,
+) -> Result<(), Error> {
+    poise::builtins::help(
+        ctx,
+        command.as_deref(),
+        poise::builtins::HelpConfiguration {
+            extra_text_at_bottom: "Type ~help command for more info on a command.",
+            show_context_menu_commands: true,
+            ..Default::default()
+        },
+    )
+    .await?;
+    Ok(())
+}
 
 #[tokio::main]
 async fn main() {
@@ -107,34 +47,79 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let redis_url = env::var("REDIS_DSL").expect("REDIS_DSL must be set");
-    let redis_client = redis::Client::open(redis_url).expect("Failed to connect to Redis");
+    let redis_client = Arc::new(
+        RedisClient::open(redis_url).expect("Failed to connect to Redis")
+    );
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
-    let framework = StandardFramework::new()
-        .configure(|c| c.prefix("~"))
-        .group(&GENERAL_GROUP);
-    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
-    let mut client = Client::builder(&token, intents)
+    let intents = serenity::GatewayIntents::GUILD_MESSAGES 
+        | serenity::GatewayIntents::MESSAGE_CONTENT;
+
+    let framework = poise::Framework::builder()
+        .options(poise::FrameworkOptions {
+            commands: vec![
+                help(),
+                commands::imagine(),
+                // TODO: Add other commands here
+            ],
+            prefix_options: poise::PrefixFrameworkOptions {
+                prefix: Some("~".into()),
+                edit_tracker: Some(Arc::new(poise::EditTracker::for_timespan(
+                    std::time::Duration::from_secs(3600),
+                ))),
+                ..Default::default()
+            },
+            // Event handlers
+            event_handler: |ctx, event, _framework, data| {
+                Box::pin(async move {
+                    match event {
+                        Event::Message { new_message } => {
+                            handlers::chat::chat_handler(ctx, new_message).await?;
+                            handlers::ming::ming_handler(ctx, new_message).await?;
+                        }
+                        Event::Ready { data_about_bot } => {
+                            info!("Connected as {}", data_about_bot.user.name);
+                        }
+                        _ => {}
+                    }
+                    Ok(())
+                })
+            },
+            pre_command: |ctx| {
+                Box::pin(async move {
+                    info!("Executing command {}", ctx.command().name);
+                })
+            },
+            post_command: |ctx| {
+                Box::pin(async move {
+                    info!("Executed command {}", ctx.command().name);
+                })
+            },
+            on_error: |error| {
+                Box::pin(async move {
+                    error!("Error in command: {:?}", error);
+                    if let Err(e) = poise::builtins::on_error(error).await {
+                        error!("Error while handling error: {}", e);
+                    }
+                })
+            },
+            ..Default::default()
+        })
+        .setup(move |ctx, _ready, framework| {
+            Box::pin(async move {
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                Ok(Data {
+                    redis_client: redis_client.clone(),
+                })
+            })
+        })
+        .build();
+
+    let client = serenity::ClientBuilder::new(token, intents)
         .framework(framework)
-        .event_handler(Handler)
-        .await
-        .expect("Err creating client");
+        .await;
 
-    {
-        let mut data = client.data.write().await;
-        data.insert::<RedisClient>(redis_client);
-    }
-
-    let shard_manager = client.shard_manager.clone();
-
-    tokio::spawn(async move {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("Could not register ctrl+c handler");
-        shard_manager.lock().await.shutdown_all().await;
-    });
-
-    if let Err(why) = client.start().await {
+    if let Err(why) = client.unwrap().start().await {
         error!("Client error: {:?}", why);
     }
 }

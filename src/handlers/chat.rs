@@ -87,7 +87,7 @@ async fn send_response_and_update_history(
     }
 }
 
-pub async fn chat_handler(ctx: &Context, new_message: &Message) {
+pub async fn chat_handler(ctx: &serenity::Context, new_message: &serenity::Message) -> Result<(), crate::Error> {
     if !new_message.mentions.is_empty() && is_tagging_me_only(&new_message.mentions) {
         let data = ctx.data.write().await;
         let client = data.get::<RedisClient>().unwrap();
@@ -100,3 +100,4 @@ pub async fn chat_handler(ctx: &Context, new_message: &Message) {
         send_response_and_update_history(ctx, new_message, response, &mut conn).await;
     }
 }
+    Ok(())
