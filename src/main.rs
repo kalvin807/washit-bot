@@ -63,6 +63,8 @@ async fn main() {
                 commands::epl_standing(),
                 commands::multiply(),
                 commands::ping(),
+                commands::read(),
+                commands::write(),
                 // TODO: Add other commands here
             ],
             prefix_options: poise::PrefixFrameworkOptions {

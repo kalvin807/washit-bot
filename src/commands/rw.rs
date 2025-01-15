@@ -1,46 +1,48 @@
-use redis::Commands;
-use serenity::framework::standard::macros::command;
-use serenity::framework::standard::{Args, CommandResult};
-use serenity::model::prelude::*;
-use serenity::prelude::*;
+use crate::{Context, Error};
+use redis::Connection;
 
 use crate::utils::redis_client::RedisClient;
 
-#[command]
-pub async fn write(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data = ctx.data.write().await;
-    let client = data.get::<RedisClient>().unwrap();
-    let key = args.single::<String>()?;
-    let message = args.single::<String>()?;
-    let mut conn = client.get_connection().unwrap();
-
-    async {
-        match conn.set::<String, String, String>(key, message) {
-            Ok(_) => msg.reply(&ctx.http, "OK").await,
-            Err(_) => msg.reply(&ctx.http, "ERR").await,
+/// Write a URL to the database
+#[poise::command(slash_command, prefix_command)]
+pub async fn write(
+    ctx: Context<'_>,
+    #[description = "URL to store"] url: String,
+) -> Result<(), Error> {
+    let data = ctx.data();
+    let client = &data.redis_client;
+    let mut conn = client.get_connection()?;
+    
+    match conn.set::<&str, &str>(&url, "") {
+        Ok(_) => {
+            ctx.say(format!("Added {}", url)).await?;
         }
-        .expect("failed to send message");
+        Err(e) => {
+            ctx.say(format!("Error: {}", e)).await?;
+        }
     }
-    .await;
-
+    
     Ok(())
 }
 
-#[command]
-pub async fn read(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let data = ctx.data.write().await;
-    let client = data.get::<RedisClient>().unwrap();
-    let key = args.single::<String>()?;
-    let mut conn = client.get_connection().unwrap();
-
-    async {
-        match conn.get::<String, String>(key) {
-            Ok(result) => msg.reply(&ctx.http, format!("Result: {:?}", result)).await,
-            Err(e) => msg.reply(&ctx.http, format!("Error: {:?}", e)).await,
+/// Read a URL from the database
+#[poise::command(slash_command, prefix_command)]
+pub async fn read(
+    ctx: Context<'_>,
+    #[description = "URL to check"] url: String,
+) -> Result<(), Error> {
+    let data = ctx.data();
+    let client = &data.redis_client;
+    let mut conn = client.get_connection()?;
+    
+    match conn.get::<&str, String>(&url) {
+        Ok(_) => {
+            ctx.say(format!("Found {}", url)).await?;
         }
-        .expect("failed to send message");
+        Err(_) => {
+            ctx.say(format!("Not found {}", url)).await?;
+        }
     }
-    .await;
-
+    
     Ok(())
 }
