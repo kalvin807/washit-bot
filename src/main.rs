@@ -7,8 +7,7 @@ use std::env;
 use std::sync::Arc;
 
 use dotenvy::dotenv;
-use poise::{serenity_prelude as serenity, FrameworkError};
-use poise::serenity_prelude::Event;
+use poise::serenity_prelude as serenity;
 use crate::commands::{
     epl_standing::epl_standing,
     math::multiply,
@@ -84,12 +83,15 @@ async fn main() {
             // Event handlers
             event_handler: |ctx, event, _framework, data| {
                 Box::pin(async move {
-                    if let Event::Message { new_message } = event {
-                        handlers::chat::chat_handler(ctx, new_message).await?;
-                        handlers::ming::ming_handler(ctx, new_message).await?;
-                    }
-                    if let Event::Ready { data_about_bot } = event {
-                        info!("Connected as {}", data_about_bot.user.name);
+                    match event {
+                        poise::FrameworkEvent::Message { new_message } => {
+                            handlers::chat::chat_handler(ctx, new_message).await?;
+                            handlers::ming::ming_handler(ctx, new_message).await?;
+                        }
+                        poise::FrameworkEvent::Ready { data_about_bot } => {
+                            info!("Connected as {}", data_about_bot.user.name);
+                        }
+                        _ => {}
                     }
                     Ok(())
                 })
