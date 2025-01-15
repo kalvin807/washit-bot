@@ -1,39 +1,30 @@
-use serenity::builder::CreateApplicationCommand;
-use serenity::model::prelude::command::CommandOptionType;
-use serenity::model::prelude::interaction::application_command::{
-    CommandDataOption, CommandDataOptionValue,
-};
-
+use crate::{Context, Error};
 use crate::utils::openai::generate_images;
+use poise::CreateReply;
 
-pub async fn run(options: &[CommandDataOption]) -> String {
-    let option = options
-        .get(0)
-        .expect("Expected a string")
-        .resolved
-        .as_ref()
-        .expect("Expected string");
-
-    if let CommandDataOptionValue::String(prompt) = option {
-        let response = generate_images(prompt).await.map(|urls| urls.join("\n"));
-        match response {
-            Ok(response) => format!("{}\n ```{}```", response, prompt),
-            Err(e) => format!("OpenAI: {}", e),
+/// Ask AI to draw an image based on your prompt
+#[poise::command(slash_command)]
+pub async fn imagine(
+    ctx: Context<'_>,
+    #[description = "The instruction"] prompt: String,
+) -> Result<(), Error> {
+    // Defer the response since image generation might take a while
+    ctx.defer().await?;
+    
+    let response = generate_images(&prompt).await.map(|urls| urls.join("\n"));
+    match response {
+        Ok(response) => {
+            let reply = CreateReply::default()
+                .content(format!("{}\n ```{}```", response, prompt));
+            ctx.send(reply).await?;
         }
-    } else {
-        "Please provide a valid prompt".to_string()
+        Err(e) => {
+            let reply = CreateReply::default()
+                .content(format!("OpenAI: {}", e))
+                .ephemeral(true);
+            ctx.send(reply).await?;
+        }
     }
-}
-
-pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
-    command
-        .name("imagine")
-        .description("Ask ai to draw")
-        .create_option(|option| {
-            option
-                .name("prompt")
-                .description("The instruction")
-                .kind(CommandOptionType::String)
-                .required(true)
-        })
+    
+    Ok(())
 }

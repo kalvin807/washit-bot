@@ -1,0 +1,8 @@
+18970:C 15 Jan 2025 08:12:58.873 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+18970:C 15 Jan 2025 08:12:58.873 # Redis version=7.0.15, bits=64, commit=00000000, modified=0, pid=18970, just started
+18970:C 15 Jan 2025 08:12:58.873 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+18970:M 15 Jan 2025 08:12:58.873 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+18970:M 15 Jan 2025 08:12:58.873 * monotonic clock: POSIX clock_gettime
+18970:M 15 Jan 2025 08:12:58.874 * Running mode=standalone, port=6379.
+18970:M 15 Jan 2025 08:12:58.874 # Server initialized
+18970:M 15 Jan 2025 08:12:58.876 * Ready to accept connections
