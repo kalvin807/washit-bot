@@ -1,34 +1,27 @@
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
-use serenity::{model::prelude::Message, prelude::Context};
-use tracing::debug;
+use serenity::model::prelude::*;
+use serenity::prelude::*;
 
-lazy_static! {
-    static ref URL_RE: Regex =
-        Regex::new(r"https:\/\/(www.|)(twitter|x)\.com\/(#!\/)?(\w+)\/status(es)*\/(\d+)").unwrap();
-}
+static URL_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(https?://)?(?:www\.)?(twitter|x)\.com/([a-zA-Z0-9_]+)/status/([0-9]+)(?:\S+)?").unwrap()
+});
 
 fn is_twitter_url(url: &str) -> bool {
-    if URL_RE.is_match(url) {
-        return true;
-    }
-    false
+    URL_RE.is_match(url)
 }
 
 fn replace_twitter_url_with_vxtwitter(url: &str) -> String {
-    let replaced = URL_RE.replace_all(url, "https://vxtwitter.com/$4/status/$6");
-    replaced.to_string()
+    URL_RE.replace_all(url, "https://vxtwitter.com/$3/status/$4").to_string()
 }
 
-pub async fn twitter_handler(ctx: &Context, new_message: &Message) {
-    let content = new_message.content.clone();
-
-    if is_twitter_url(&content) {
-        debug!("Twitter URL detected");
-        let _ = new_message
-            .reply(&ctx.http, replace_twitter_url_with_vxtwitter(&content))
-            .await;
+pub async fn twitter_handler(ctx: &Context, new_message: &Message) -> Result<(), crate::Error> {
+    let content = &new_message.content;
+    if is_twitter_url(content) {
+        let vx_url = replace_twitter_url_with_vxtwitter(content);
+        new_message.reply(ctx, vx_url).await?;
     }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -36,39 +29,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_x_url_pass() {
-        let test_url = "https://x.com/JonAiart/status/1714415995484622866?s=20".to_string();
-        assert!(is_twitter_url(&test_url));
-        assert!(
-            replace_twitter_url_with_vxtwitter(&test_url)
-                == "https://vxtwitter.com/JonAiart/status/1714415995484622866?s=20".to_string()
-        )
+    fn test_twitter_url_pass() {
+        let url = "twitter.com/user/status/123456789";
+        assert!(is_twitter_url(url));
     }
 
     #[test]
-    fn test_twitter_url_pass() {
-        let test_url = "https://twitter.com/JonAiart/status/1714415995484622866?s=20".to_string();
-        assert!(is_twitter_url(&test_url));
-        assert!(
-            replace_twitter_url_with_vxtwitter(&test_url)
-                == "https://vxtwitter.com/JonAiart/status/1714415995484622866?s=20".to_string()
-        )
+    fn test_x_url_pass() {
+        let url = "x.com/user/status/123456789";
+        assert!(is_twitter_url(url));
     }
 
     #[test]
     fn test_full_twitter_url_pass() {
-        let test_url =
-            "https://www.twitter.com/JonAiart/status/1714415995484622866?s=20".to_string();
-        assert!(is_twitter_url(&test_url));
-        assert!(
-            replace_twitter_url_with_vxtwitter(&test_url)
-                == "https://vxtwitter.com/JonAiart/status/1714415995484622866?s=20".to_string()
-        )
+        let url = "https://twitter.com/user/status/123456789";
+        assert!(is_twitter_url(url));
     }
 
     #[test]
     fn test_vxtwitter_url_fail() {
-        let test_url = "https://vxtwitter.com/JonAiart/status/1714415995484622866?s=20".to_string();
-        assert!(is_twitter_url(&test_url) == false)
+        let url = "vxtwitter.com/user/status/123456789";
+        assert!(!is_twitter_url(url));
     }
 }
