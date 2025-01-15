@@ -8,14 +8,15 @@ use std::sync::Arc;
 
 use dotenvy::dotenv;
 use poise::serenity_prelude::{self as serenity, FullEvent};
+use redis::Client as RedisClient;
+use tracing::{error, info};
+
 use crate::commands::{
     epl_standing::epl_standing,
     math::multiply,
     meta::ping,
     rw::{read, write},
 };
-use redis::Client as RedisClient;
-use tracing::{error, info};
 
 // Type aliases for convenience
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -24,7 +25,7 @@ pub type Context<'a> = poise::Context<'a, Data, Error>;
 // User data, which is stored and accessible in all command invocations
 #[derive(Debug)]
 pub struct Data {
-    redis_client: Arc<RedisClient>,
+    pub redis_client: Arc<RedisClient>,
 }
 
 /// Show help menu
@@ -81,7 +82,7 @@ async fn main() {
                 ..Default::default()
             },
             // Event handlers
-            event_handler: |ctx, event, _framework, data| {
+            event_handler: |ctx, event, _framework, _data| {
                 Box::pin(async move {
                     match event {
                         FullEvent::Message { new_message } => {

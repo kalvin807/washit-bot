@@ -1,6 +1,6 @@
 use comfy_table::{Cell, Table};
 use poise::serenity_prelude::*;
-use crate::libs::epl_data_client::StandingsResponse;
+use crate::libs::epl_data_client::{StandingsResponse, TeamStanding};
 
 use crate::{Context, Error};
 
@@ -68,27 +68,20 @@ mod tests {
 
     #[test]
     fn test_format_standings() {
-        let json_str = r#"[
-            {
-                "rank": 1,
-                "team": {
-                    "shortName": "ARS"
-                },
-                "stats": [
-                    {"value": 20},
-                    {"value": 15},
-                    {"value": 3},
-                    {"value": 2},
-                    {"value": 43},
-                    {"value": 20},
-                    {"value": 23},
-                    {"value": 48}
-                ]
+        let standings = vec![
+            TeamStanding {
+                standing: 1,
+                team_name: "ARS".to_string(),
+                victory_point: 48,
+                match_count: 20,
+                won_count: 15,
+                drawn_count: 3,
+                lost_count: 2,
+                goal_point: 43,
+                point_difference: 23,
+                lost_point: 20,
             }
-        ]"#;
-
-        let standings: Value = serde_json::from_str(json_str).unwrap();
-        let standings = standings.as_array().unwrap();
+        ];
 
         let mut table = Table::new();
         table.set_header(vec![
@@ -105,17 +98,18 @@ mod tests {
         ]);
 
         for standing in standings {
-            let team = standing["team"].as_object().unwrap();
-            let stats = standing["stats"].as_array().unwrap();
             let mut row = Vec::new();
 
-            row.push(Cell::new(standing["rank"].as_i64().unwrap()));
-            row.push(Cell::new(team["shortName"].as_str().unwrap()));
-
-            for stat in stats {
-                let value = stat["value"].as_i64().unwrap();
-                row.push(Cell::new(value));
-            }
+            row.push(Cell::new(standing.standing));
+            row.push(Cell::new(&standing.team_name));
+            row.push(Cell::new(standing.match_count));
+            row.push(Cell::new(standing.won_count));
+            row.push(Cell::new(standing.drawn_count));
+            row.push(Cell::new(standing.lost_count));
+            row.push(Cell::new(standing.goal_point));
+            row.push(Cell::new(standing.goal_point));
+            row.push(Cell::new(standing.point_difference));
+            row.push(Cell::new(standing.victory_point));
 
             table.add_row(row);
         }
