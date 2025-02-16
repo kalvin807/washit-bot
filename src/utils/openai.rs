@@ -4,10 +4,13 @@ use std::env;
 use tracing::{debug, warn};
 
 use crate::handlers::chat::BOT_ID;
-#[derive(Debug, Serialize, Deserialize)]
+
+#[derive(Debug, Default, Serialize, Deserialize)]
 struct Message {
     role: String,
     content: String,
+    #[serde(default)]
+    refusal: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,27 +20,52 @@ struct ChatGPTRequest {
     temperature: f64,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 struct ChatGPTResponse {
     id: String,
     object: String,
-    created: u64,
+    created: i64,
+    model: String,
     choices: Vec<Choice>,
     usage: Usage,
+    #[serde(default)]
+    system_fingerprint: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 struct Choice {
     index: u32,
     message: Message,
+    #[serde(default)]
+    logprobs: Option<serde_json::Value>,
     finish_reason: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 struct Usage {
     prompt_tokens: u32,
     completion_tokens: u32,
     total_tokens: u32,
+    #[serde(default)]
+    prompt_tokens_details: Option<PromptTokensDetails>,
+    #[serde(default)]
+    completion_tokens_details: Option<CompletionTokensDetails>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct PromptTokensDetails {
+    #[serde(default)]
+    cached_tokens: u32,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct CompletionTokensDetails {
+    #[serde(default)]
+    reasoning_tokens: u32,
+    #[serde(default)]
+    accepted_prediction_tokens: u32,
+    #[serde(default)]
+    rejected_prediction_tokens: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -78,6 +106,7 @@ fn build_request(user_prompt: String, history_messages: Vec<Message>) -> ChatGPT
     let mut messages = vec![Message {
         role: "system".to_string(),
         content: get_default_prompt(),
+        refusal: None,
     }];
 
     messages.extend(history_messages);
@@ -85,6 +114,7 @@ fn build_request(user_prompt: String, history_messages: Vec<Message>) -> ChatGPT
     messages.push(Message {
         role: "user".to_string(),
         content: user_prompt,
+        refusal: None,
     });
 
     ChatGPTRequest {
@@ -152,6 +182,7 @@ fn build_history_messages(history: Vec<DiscordMessage>) -> Vec<Message> {
                 }
             },
             content: message.content,
+            refusal: None,
         })
         .collect()
 }
