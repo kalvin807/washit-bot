@@ -87,16 +87,29 @@ struct OpenAIError {
 struct ImageGenerationPayload {
     model: String,
     prompt: String,
+    #[serde(default)]
+    n: Option<u32>,
+    #[serde(default)]
+    quality: Option<String>,
+    #[serde(default)]
+    response_format: Option<String>,
+    #[serde(default)]
+    size: Option<String>,
+    #[serde(default)]
+    style: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 struct ImageResponse {
-    url: String,
+    #[serde(default)]
+    b64_json: Option<String>,
+    revised_prompt: Option<String>,
+    url: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 struct ImageGenerationResponse {
-    created: u64,
+    created: i64,
     data: Vec<ImageResponse>,
 }
 
@@ -204,6 +217,11 @@ pub async fn generate_images(prompt: &str) -> Result<Vec<String>, String> {
     let payload = ImageGenerationPayload {
         model: "dall-e-3".to_string(),
         prompt: prompt.to_string(),
+        n: Some(1),
+        quality: None,
+        response_format: None,
+        size: None,
+        style: None,
     };
 
     let response = client
@@ -223,10 +241,11 @@ pub async fn generate_images(prompt: &str) -> Result<Vec<String>, String> {
         format!("Error parsing response from OpenAI: {}", e)
     })?;
     debug!("OpenAI response: {:#?}", api_response);
+    
     let image_urls = api_response
         .data
         .into_iter()
-        .map(|image_response| image_response.url)
+        .filter_map(|image_response| image_response.url)
         .collect();
 
     Ok(image_urls)
